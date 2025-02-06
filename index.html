@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediRemind - Your Medical Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-['Inter']">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-teal-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">MediRemind</h1>
+                <div class="flex gap-4">
+                    <button id="notificationBtn" class="relative">
+                        <i class="bi bi-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-4 h-4 flex items-center justify-center">2</span>
+                    </button>
+                    <button id="profileBtn">
+                        <i class="bi bi-person-circle text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-4">
+            <!-- Dashboard Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-2">Next Medication</h3>
+                    <p class="text-gray-600" id="nextMedTime">Loading...</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-2">Health Status</h3>
+                    <p class="text-gray-600">Good</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-2">AI Suggestions</h3>
+                    <p class="text-gray-600">Based on your records...</p>
+                </div>
+            </div>
+
+            <!-- Add Medication Form -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <h2 class="text-xl font-semibold mb-4">Add Medication Reminder</h2>
+                <form id="medicationForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Medication Name</label>
+                        <input type="text" required class="w-full p-2 border rounded focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Time</label>
+                            <input type="time" required class="w-full p-2 border rounded focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Frequency</label>
+                            <select class="w-full p-2 border rounded focus:ring-2 focus:ring-teal-500">
+                                <option>Daily</option>
+                                <option>Weekly</option>
+                                <option>Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition">
+                        Add Reminder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Medication List -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Your Medications</h2>
+                <div id="medicationList" class="space-y-3">
+                    <!-- Medications will be added here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sample medication data
+        let medications = [
+            { name: "Vitamin D", time: "09:00", frequency: "Daily" },
+            { name: "Blood Pressure Med", time: "20:00", frequency: "Daily" }
+        ];
+
+        // Update medication list
+        function updateMedicationList() {
+            const list = document.getElementById('medicationList');
+            list.innerHTML = '';
+            medications.forEach((med, index) => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div>
+                            <h4 class="font-medium">${med.name}</h4>
+                            <p class="text-sm text-gray-600">${med.time} - ${med.frequency}</p>
+                        </div>
+                        <button onclick="deleteMedication(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // Delete medication
+        function deleteMedication(index) {
+            medications = medications.filter((_, i) => i !== index);
+            updateMedicationList();
+            updateNextMedication();
+        }
+
+        // Update next medication time
+        function updateNextMedication() {
+            const nextMedTime = document.getElementById('nextMedTime');
+            if (medications.length > 0) {
+                const now = new Date();
+                const currentTime = now.getHours() * 60 + now.getMinutes();
+                
+                let nextMed = medications[0];
+                let minDiff = Infinity;
+                
+                medications.forEach(med => {
+                    const [hours, minutes] = med.time.split(':');
+                    const medTime = parseInt(hours) * 60 + parseInt(minutes);
+                    const diff = medTime - currentTime;
+                    if (diff > 0 && diff < minDiff) {
+                        minDiff = diff;
+                        nextMed = med;
+                    }
+                });
+
+                nextMedTime.textContent = `${nextMed.name} at ${nextMed.time}`;
+            } else {
+                nextMedTime.textContent = 'No medications scheduled';
+            }
+        }
+
+        // Form submission
+        document.getElementById('medicationForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const newMed = {
+                name: form.elements[0].value,
+                time: form.elements[1].value,
+                frequency: form.elements[2].value
+            };
+            medications.push(newMed);
+            updateMedicationList();
+            updateNextMedication();
+            form.reset();
+        });
+
+        // Initialize
+        updateMedicationList();
+        updateNextMedication();
+
+        // Check for notifications permission
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+
+        // Notification check every minute
+        setInterval(() => {
+            const now = new Date();
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            medications.forEach(med => {
+                if (med.time === currentTime) {
+                    if (Notification.permission === 'granted') {
+                        new Notification('Medication Reminder', {
+                            body: `Time to take ${med.name}`,
+                            icon: 'https://via.placeholder.com/128'
+                        });
+                    }
+                }
+            });
+        }, 60000);
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
